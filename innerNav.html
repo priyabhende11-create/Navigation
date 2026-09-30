@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GHRCE Campus Indoor Navigator</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans">
+
+    <!-- 1. AUTHENTICATION SCREEN -->
+    <div id="authScreen" class="fixed inset-0 z-50 bg-slate-950 flex items-center justify-center p-4">
+        <div class="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl">
+            <div class="text-center mb-6">
+                <div class="inline-flex bg-sky-500/10 p-3 rounded-full text-sky-400 mb-3">
+                    <i class="fa-solid fa-shield-halved text-3xl"></i>
+                </div>
+                <h1 class="text-2xl font-bold text-white">GHRCE Campus Portal</h1>
+                <p class="text-xs text-slate-400 mt-1">E-Zone Second Floor Navigation</p>
+            </div>
+
+            <!-- Auth Tabs -->
+            <div class="flex border-b border-slate-800 mb-6">
+                <button id="loginTabBtn" onclick="switchAuthMode('login')"
+                    class="flex-1 pb-3 text-sm font-semibold border-b-2 border-sky-500 text-sky-400">Login</button>
+                <button id="registerTabBtn" onclick="switchAuthMode('register')"
+                    class="flex-1 pb-3 text-sm font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-200">Register</button>
+            </div>
+
+            <!-- Login Form -->
+            <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Student ID / Reg No.</label>
+                    <input type="text" id="loginId" required placeholder="e.g. 2023BT0100"
+                        class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-sm text-slate-200 focus:border-sky-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Password</label>
+                    <input type="password" id="loginPass" required placeholder="••••••••"
+                        class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-sm text-slate-200 focus:border-sky-500 focus:outline-none">
+                </div>
+                <button type="submit"
+                    class="w-full bg-sky-600 hover:bg-sky-500 text-white font-semibold py-3 rounded-lg text-sm transition shadow-lg shadow-sky-600/30">
+                    <i class="fa-solid fa-right-to-bracket mr-2"></i> Verify Credentials
+                </button>
+            </form>
+
+            <!-- Register Form -->
+            <form id="registerForm" onsubmit="handleRegister(event)" class="space-y-4 hidden">
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Full Name</label>
+                    <input type="text" id="regName" required placeholder="Student Full Name"
+                        class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-sm text-slate-200 focus:border-sky-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Student ID / Registration ID</label>
+                    <input type="text" id="regId" required placeholder="e.g. 2023BT0100"
+                        class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-sm text-slate-200 focus:border-sky-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Create Password</label>
+                    <input type="password" id="regPass" required placeholder="••••••••"
+                        class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-sm text-slate-200 focus:border-sky-500 focus:outline-none">
+                </div>
+                <button type="submit"
+                    class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 rounded-lg text-sm transition shadow-lg shadow-emerald-600/30">
+                    <i class="fa-solid fa-user-plus mr-2"></i> Register Account
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 2. WELCOME / NEXT STEP SCREEN -->
+    <div id="welcomeScreen" class="fixed inset-0 z-40 bg-slate-950 flex items-center justify-center p-4 hidden">
+        <div class="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl text-center">
+            <div class="bg-emerald-500/10 text-emerald-400 p-4 rounded-full inline-block mb-4">
+                <i class="fa-solid fa-circle-check text-4xl"></i>
+            </div>
+            <h2 class="text-xl font-bold text-white mb-1">Login Successful!</h2>
+            <p id="welcomeUserName" class="text-sm font-semibold text-sky-400">Welcome, Student</p>
+            <p class="text-xs text-slate-400 mt-2 mb-6">Your session is authenticated. Click Next to launch navigation.
+            </p>
+
+            <button onclick="proceedToNavigation()"
+                class="w-full bg-sky-600 hover:bg-sky-500 text-white font-bold py-3.5 rounded-xl text-sm transition flex items-center justify-center gap-2 shadow-lg shadow-sky-600/30">
+                <span>Next / Start Navigation</span>
+                <i class="fa-solid fa-arrow-right"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- 3. MAIN NAVIGATION APP -->
+    <div id="appScreen" class="hidden min-h-screen flex flex-col">
+        <header
+            class="bg-slate-900 border-b border-slate-800 px-6 py-3 flex justify-between items-center sticky top-0 z-30">
+            <div class="flex items-center gap-3">
+                <div class="bg-sky-500 p-2 rounded-lg text-slate-950 font-bold"><i
+                        class="fa-solid fa-compass text-xl"></i></div>
+                <div>
+                    <h1 class="font-bold text-base text-sky-400 leading-tight">GHRCE Indoor Navigator</h1>
+                    <p class="text-xs text-slate-400">E-Zone 2nd Floor • All Floor Locations</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="hidden sm:block text-right">
+                    <p id="studentBadgeName" class="text-xs font-semibold text-slate-200">Student</p>
+                    <p id="studentBadgeId" class="text-[10px] text-emerald-400">Authenticated Session</p>
+                </div>
+                <button onclick="handleLogout()"
+                    class="bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white px-3 py-1.5 rounded-lg text-xs font-semibold border border-rose-500/30 transition flex items-center gap-2">
+                    <i class="fa-solid fa-power-off"></i> Logout
+                </button>
+            </div>
+        </header>
+
+        <div class="flex-1 flex flex-col lg:flex-row overflow-hidden">
+            <!-- Sidebar Controls -->
+            <aside
+                class="w-full lg:w-96 bg-slate-900 border-r border-slate-800 p-5 flex flex-col gap-4 overflow-y-auto custom-scrollbar">
+                <div>
+                    <h2 class="text-sm font-bold text-sky-400 flex items-center gap-2">
+                        <i class="fa-solid fa-diamond-turn-right"></i> Route Selection
+                    </h2>
+                </div>
+
+                <div class="space-y-3">
+                    <div>
+                        <label class="text-xs font-semibold text-slate-300 block mb-1">Start Location:</label>
+                        <select id="sourceSelect" onchange="findAndDrawPath()"
+                            class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200 focus:border-sky-500 focus:outline-none">
+                            <option value="here" selected>Main Entrance ("Here We Are")</option>
+                            <option value="stairs">Central Staircase</option>
+                            <option value="elevator">Main Elevator / Lift</option>
+                            <option value="c_main">Central Corridor J1</option>
+                            <option value="c_west_1">West Corridor J1</option>
+                            <option value="c_west_2">West Corridor J2</option>
+                            <option value="c_east_1">East Corridor J1</option>
+                            <option value="c_east_2">East Corridor J2</option>
+                            <option value="e18">Class Room E-18</option>
+                            <option value="e19">Class Room E-19</option>
+                            <option value="e20">Boys Common Room E-20</option>
+                            <option value="e21">Class Room E-21</option>
+                            <option value="e22">Project Lab E-22</option>
+                            <option value="hod">HOD Office (ECE)</option>
+                            <option value="staff">Faculty Staff Room</option>
+                            <option value="e28">VLSI Lab E-28</option>
+                            <option value="e29">Computer Center E-29</option>
+                            <option value="washroom">Restrooms / Washroom</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="text-xs font-semibold text-slate-300 block mb-1">Target Destination:</label>
+                        <select id="destSelect" onchange="findAndDrawPath()"
+                            class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200 focus:border-sky-500 focus:outline-none">
+                            <option value="here">Main Entrance ("Here We Are")</option>
+                            <option value="stairs">Central Staircase</option>
+                            <option value="elevator">Main Elevator / Lift</option>
+                            <option value="c_main">Central Corridor J1</option>
+                            <option value="c_west_1">West Corridor J1</option>
+                            <option value="c_west_2">West Corridor J2</option>
+                            <option value="c_east_1">East Corridor J1</option>
+                            <option value="c_east_2">East Corridor J2</option>
+                            <option value="e18">Class Room E-18</option>
+                            <option value="e19">Class Room E-19</option>
+                            <option value="e20">Boys Common Room E-20</option>
+                            <option value="e21">Class Room E-21</option>
+                            <option value="e22" selected>Project Lab E-22</option>
+                            <option value="hod">HOD Office (ECE)</option>
+                            <option value="staff">Faculty Staff Room</option>
+                            <option value="e28">VLSI Lab E-28</option>
+                            <option value="e29">Computer Center E-29</option>
+                            <option value="washroom">Restrooms / Washroom</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="text-xs font-semibold text-slate-300 block mb-1">Voice Audio:</label>
+                        <select id="languageSelect"
+                            class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200 focus:border-sky-500 focus:outline-none">
+                            <option value="en-US">English Voice</option>
+                            <option value="mr-IN">Marathi Voice (मराठी)</option>
+                            <option value="hi-IN">Hindi Voice (हिंदी)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="space-y-2 pt-1">
+                    <button onclick="toggleRealGPS()" id="gpsToggleBtn"
+                        class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 px-4 rounded-lg text-xs transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-location-crosshairs text-base"></i> <span id="gpsBtnLabel">Start Live GPS
+                            Tracking</span>
+                    </button>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button onclick="startLiveSimulation()"
+                            class="bg-sky-600 hover:bg-sky-500 text-white font-semibold py-2.5 px-2 rounded-lg text-xs transition">Demo
+                            Walk</button>
+                        <button onclick="playVoiceGuidance()"
+                            class="bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2.5 px-2 rounded-lg text-xs transition">Play
+                            Audio</button>
+                        <button onclick="stopVoiceGuidance()"
+                            class="bg-rose-600 hover:bg-rose-500 text-white font-semibold py-2.5 px-2 rounded-lg text-xs transition">Stop
+                            Audio</button>
+                    </div>
+                </div>
+
+                <div class="mt-2 flex-1">
+                    <h3 class="text-xs font-bold text-sky-400 uppercase mb-2 flex justify-between">
+                        <span>Turn-by-Turn Guidance</span>
+                        <span id="pathDistanceBadge"
+                            class="text-[10px] bg-sky-950 text-sky-300 border border-sky-800 px-2 py-0.5 rounded">0
+                            Meters</span>
+                    </h3>
+                    <div
+                        class="bg-slate-950 border border-slate-800 rounded-lg p-3 max-h-48 overflow-y-auto custom-scrollbar">
+                        <ol id="textInstructions" class="text-xs text-slate-300 space-y-2.5 list-decimal list-inside">
+                            <li>Select route to generate guidance.</li>
+                        </ol>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Map View Canvas -->
+            <section class="flex-1 bg-slate-950 p-4 flex items-center justify-center relative overflow-hidden">
+                <div
+                    class="relative bg-slate-900 border border-slate-800 rounded-2xl p-2 shadow-2xl overflow-hidden max-w-full">
+                    <canvas id="mapCanvas" width="800" height="600"
+                        class="rounded-xl bg-slate-950 max-w-full h-auto"></canvas>
+                    <div
+                        class="absolute top-5 left-5 bg-slate-900/90 border border-slate-800 px-3 py-1.5 rounded-full text-xs text-sky-400 flex items-center gap-2">
+                        <span id="statusIndicator" class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span id="statusText">System Ready</span>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        function checkExistingSession() {
+            const currentUser = localStorage.getItem('ghrce_user_session');
+            if (currentUser) {
+                const user = JSON.parse(currentUser);
+                document.getElementById('welcomeUserName').innerText = "Welcome, " + user.name;
+                document.getElementById('studentBadgeName').innerText = user.name;
+                document.getElementById('studentBadgeId').innerText = "ID: " + user.studentId;
+                document.getElementById('authScreen').classList.add('hidden');
+                document.getElementById('welcomeScreen').classList.remove('hidden');
+            }
+        }
+
+        function switchAuthMode(mode) {
+            if (mode === 'login') {
+                document.getElementById('loginForm').classList.remove('hidden');
+                document.getElementById('registerForm').classList.add('hidden');
+                document.getElementById('loginTabBtn').className = "flex-1 pb-3 text-sm font-semibold border-b-2 border-sky-500 text-sky-400";
+                document.getElementById('registerTabBtn').className = "flex-1 pb-3 text-sm font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-200";
+            } else {
+                document.getElementById('loginForm').classList.add('hidden');
+                document.getElementById('registerForm').classList.remove('hidden');
+                document.getElementById('registerTabBtn').className = "flex-1 pb-3 text-sm font-semibold border-b-2 border-emerald-500 text-emerald-400";
+                document.getElementById('loginTabBtn').className = "flex-1 pb-3 text-sm font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-200";
+            }
+        }
+
+        function handleRegister(e) {
+            e.preventDefault();
+            const name = document.getElementById('regName').value;
+            const studentId = document.getElementById('regId').value;
+            const password = document.getElementById('regPass').value;
+            const users = JSON.parse(localStorage.getItem('ghrce_registered_users') || '{}');
+            users[studentId] = { name, studentId, password };
+            localStorage.setItem('ghrce_registered_users', JSON.stringify(users));
+            alert("Registration Successful! Now enter credentials to Login.");
+            switchAuthMode('login');
+            document.getElementById('loginId').value = studentId;
+            document.getElementById('loginPass').value = '';
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const studentId = document.getElementById('loginId').value;
+            const password = document.getElementById('loginPass').value;
+            const users = JSON.parse(localStorage.getItem('ghrce_registered_users') || '{}');
+            if (users[studentId] && users[studentId].password === password) {
+                const session = { name: users[studentId].name, studentId };
+                localStorage.setItem('ghrce_user_session', JSON.stringify(session));
+                checkExistingSession();
+            } else {
+                alert("Invalid Credentials! Register if you haven't yet.");
+            }
+        }
+
+        function proceedToNavigation() {
+            document.getElementById('welcomeScreen').classList.add('hidden');
+            document.getElementById('appScreen').classList.remove('hidden');
+            initMapEngine();
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('ghrce_user_session');
+            location.reload();
+        }
+
+        // Campus Map Nodes Definition
+        const nodes = {
+            'here': { name: "Main Entrance", x: 400, y: 540 },
+            'stairs': { name: "Central Staircase", x: 400, y: 460 },
+            'elevator': { name: "Elevator / Lift", x: 450, y: 460 },
+            'c_main': { name: "Central Corridor J1", x: 400, y: 380 },
+            'c_west_1': { name: "West Corridor J1", x: 260, y: 380 },
+            'c_west_2': { name: "West Corridor J2", x: 180, y: 260 },
+            'c_east_1': { name: "East Corridor J1", x: 540, y: 380 },
+            'c_east_2': { name: "East Corridor J2", x: 620, y: 260 },
+            'e18': { name: "Class Rm E-18", x: 180, y: 480 },
+            'e19': { name: "Class Rm E-19", x: 100, y: 380 },
+            'e20': { name: "Boys Common Rm E-20", x: 260, y: 140 },
+            'e21': { name: "Class Rm E-21", x: 120, y: 140 },
+            'e22': { name: "Project Lab E-22", x: 400, y: 240 },
+            'hod': { name: "HOD Office (ECE)", x: 380, y: 140 },
+            'staff': { name: "Faculty Staff Room", x: 460, y: 140 },
+            'e28': { name: "VLSI Lab E-28", x: 680, y: 140 },
+            'e29': { name: "Computer Center E-29", x: 700, y: 380 },
+            'washroom': { name: "Washrooms", x: 620, y: 480 }
+        };
+
+        // Campus Graph Edges Definition
+        const graph = {
+            'here': { 'stairs': 80 },
+            'stairs': { 'here': 80, 'elevator': 50, 'c_main': 80 },
+            'elevator': { 'stairs': 50 },
+            'c_main': { 'stairs': 80, 'c_west_1': 140, 'c_east_1': 140, 'e22': 140 },
+            'c_west_1': { 'c_main': 140, 'c_west_2': 145, 'e18': 125, 'e19': 160 },
+            'c_west_2': { 'c_west_1': 145, 'e21': 135, 'e20': 140 },
+            'c_east_1': { 'c_main': 140, 'c_east_2': 145, 'e29': 160, 'washroom': 125 },
+            'c_east_2': { 'c_east_1': 145, 'e28': 135 },
+            'e18': { 'c_west_1': 125 },
+            'e19': { 'c_west_1': 160 },
+            'e20': { 'c_west_2': 140 },
+            'e21': { 'c_west_2': 135 },
+            'e22': { 'c_main': 140, 'hod': 100, 'staff': 100 },
+            'hod': { 'e22': 100 },
+            'staff': { 'e22': 100 },
+            'e28': { 'c_east_2': 135 },
+            'e29': { 'c_east_1': 160 },
+            'washroom': { 'c_east_1': 125 }
+        };
+
+        // Dijkstra Algorithm for Shortest Path Calculation
+        function dijkstra(startKey, endKey) {
+            let distances = {};
+            let prev = {};
+            let pq = [];
+
+            for (let node in graph) {
+                distances[node] = Infinity;
+                prev[node] = null;
+            }
+            distances[startKey] = 0;
+            pq.push({ node: startKey, dist: 0 });
+
+            while (pq.length > 0) {
+                pq.sort((a, b) => a.dist - b.dist);
+                let current = pq.shift().node;
+                if (current === endKey) break;
+
+                for (let neighbor in graph[current]) {
+                    let alt = distances[current] + graph[current][neighbor];
+                    if (alt < distances[neighbor]) {
+                        distances[neighbor] = alt;
+                        prev[neighbor] = current;
+                        pq.push({ node: neighbor, dist: alt });
+                    }
+                }
+            }
+
+            let path = [];
+            let curr = endKey;
+            while (curr) {
+                path.unshift(curr);
+                curr = prev[curr];
+            }
+            return path;
+        }
+
+        function calculateEnglishTurnDirections(pathKeys) {
+            if (pathKeys.length < 2) return ["You are already at your destination."];
+            let steps = [];
+            steps.push(`Start walking from <strong>${nodes[pathKeys[0]].name}</strong>.`);
+
+            for (let i = 0; i < pathKeys.length - 1; i++) {
+                let p1 = nodes[pathKeys[i]];
+                let p2 = nodes[pathKeys[i + 1]];
+
+                if (i < pathKeys.length - 2) {
+                    let p3 = nodes[pathKeys[i + 2]];
+                    let angle1 = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+                    let angle2 = Math.atan2(p3.y - p2.y, p3.x - p2.x);
+                    let diff = (angle2 - angle1) * (180 / Math.PI);
+
+                    if (diff < -180) diff += 360;
+                    if (diff > 180) diff -= 360;
+
+                    let turn = "Head straight along corridor";
+                    if (diff > 30 && diff < 120) turn = "Turn Right";
+                    else if (diff >= 120) turn = "Make a Sharp Right";
+                    else if (diff < -30 && diff > -120) turn = "Turn Left";
+                    else if (diff <= -120) turn = "Make a Sharp Left";
+
+                    steps.push(`${turn} near <strong>${p2.name}</strong>.`);
+                } else {
+                    steps.push(`Continue straight to reach <strong>${p2.name}</strong>.`);
+                }
+            }
+            steps.push(`🎉 Arrived at <strong>${nodes[pathKeys[pathKeys.length - 1]].name}</strong>.`);
+            return steps;
+        }
+
+        let canvas, ctx;
+        let activePath = [];
+        let animationFrameId = null;
+        let realGpsWatchId = null;
+        let isRealGpsActive = false;
+        let currentUserPos = null;
+
+        function initMapEngine() {
+            canvas = document.getElementById('mapCanvas');
+            ctx = canvas.getContext('2d');
+            findAndDrawPath();
+        }
+
+        function drawBaseMap() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = "#1e293b";
+            ctx.lineWidth = 20;
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
+
+            for (let u in graph) {
+                for (let v in graph[u]) {
+                    ctx.beginPath();
+                    ctx.moveTo(nodes[u].x, nodes[u].y);
+                    ctx.lineTo(nodes[v].x, nodes[v].y);
+                    ctx.stroke();
+                }
+            }
+
+            for (let key in nodes) {
+                let n = nodes[key];
+                ctx.fillStyle = (key === 'here') ? '#f43f5e' : (key.startsWith('c_') ? '#475569' : '#38bdf8');
+                ctx.beginPath();
+                ctx.arc(n.x, n.y, key.startsWith('c_') ? 5 : 8, 0, Math.PI * 2);
+                ctx.fill();
+
+                if (!key.startsWith('c_')) {
+                    ctx.fillStyle = "#cbd5e1";
+                    ctx.font = "bold 11px sans-serif";
+                    ctx.fillText(n.name, n.x + 12, n.y + 4);
+                }
+            }
+        }
+
+        function findAndDrawPath() {
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            drawBaseMap();
+
+            let startKey = document.getElementById('sourceSelect').value;
+            let endKey = document.getElementById('destSelect').value;
+
+            activePath = dijkstra(startKey, endKey);
+
+            if (activePath.length > 1) {
+                ctx.strokeStyle = "#f59e0b";
+                ctx.lineWidth = 5;
+                ctx.beginPath();
+                ctx.moveTo(nodes[activePath[0]].x, nodes[activePath[0]].y);
+                for (let i = 1; i < activePath.length; i++) {
+                    ctx.lineTo(nodes[activePath[i]].x, nodes[activePath[i]].y);
+                }
+                ctx.stroke();
+            }
+
+            let englishSteps = calculateEnglishTurnDirections(activePath);
+            document.getElementById('textInstructions').innerHTML = englishSteps.map(s => `<li>${s}</li>`).join('');
+            document.getElementById('pathDistanceBadge').innerText = (activePath.length * 12) + " Meters";
+
+            currentUserPos = { x: nodes[startKey].x, y: nodes[startKey].y };
+            renderUserPointer(currentUserPos);
+        }
+
+        function renderUserPointer(pos) {
+            ctx.fillStyle = "rgba(16, 185, 129, 0.3)";
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, 16, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = "#10b981";
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, 8, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.strokeStyle = "#ffffff";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+
+        function toggleRealGPS() {
+            const btnLabel = document.getElementById('gpsBtnLabel');
+            const statusText = document.getElementById('statusText');
+
+            if (!isRealGpsActive) {
+                if ("geolocation" in navigator) {
+                    isRealGpsActive = true;
+                    btnLabel.innerText = "Disable GPS Tracking";
+                    statusText.innerText = "GPS Live Tracking Active";
+
+                    realGpsWatchId = navigator.geolocation.watchPosition(
+                        (position) => {
+                            statusText.innerText = `GPS Active (${Math.round(position.coords.accuracy)}m accuracy)`;
+                        },
+                        (err) => {
+                            statusText.innerText = "Indoor Sensors Active";
+                        },
+                        { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+                    );
+                }
+            } else {
+                isRealGpsActive = false;
+                if (realGpsWatchId) navigator.geolocation.clearWatch(realGpsWatchId);
+                btnLabel.innerText = "Start Live GPS Tracking";
+                statusText.innerText = "System Ready";
+            }
+        }
+
+        function startLiveSimulation() {
+            findAndDrawPath();
+            if (activePath.length < 2) return;
+
+            let currentSegment = 0;
+            let progress = 0;
+
+            function animate() {
+                progress += 0.015;
+                if (progress >= 1) {
+                    progress = 0;
+                    currentSegment++;
+                }
+
+                if (currentSegment < activePath.length - 1) {
+                    let p1 = nodes[activePath[currentSegment]];
+                    let p2 = nodes[activePath[currentSegment + 1]];
+
+                    currentUserPos = {
+                        x: p1.x + (p2.x - p1.x) * progress,
+                        y: p1.y + (p2.y - p1.y) * progress
+                    };
+
+                    drawBaseMap();
+
+                    ctx.strokeStyle = "#f59e0b";
+                    ctx.lineWidth = 5;
+                    ctx.beginPath();
+                    ctx.moveTo(nodes[activePath[0]].x, nodes[activePath[0]].y);
+                    for (let i = 1; i < activePath.length; i++) {
+                        ctx.lineTo(nodes[activePath[i]].x, nodes[activePath[i]].y);
+                    }
+                    ctx.stroke();
+
+                    renderUserPointer(currentUserPos);
+                    animationFrameId = requestAnimationFrame(animate);
+                } else {
+                    document.getElementById('statusText').innerText = "Arrived at Destination!";
+                }
+            }
+            animate();
+            playVoiceGuidance();
+        }
+
+        function playVoiceGuidance() {
+            if (!('speechSynthesis' in window)) return;
+            window.speechSynthesis.cancel();
+
+            let lang = document.getElementById('languageSelect').value;
+            let textList = calculateEnglishTurnDirections(activePath);
+            let cleanText = textList.map(s => s.replace(/<\/?[^>]+(>|$)/g, "")).join('. ');
+
+            let utterance = new SpeechSynthesisUtterance(cleanText);
+            utterance.lang = lang;
+            utterance.rate = 0.9;
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function stopVoiceGuidance() {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+            }
+        }
+
+        window.onload = checkExistingSession;
+    </script>
+</body>
+
+</html>
